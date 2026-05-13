@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Paste & Scan · QR Code Reader</title>
+  <!-- html5-qrcode library for robust QR scanning -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: linear-gradient(145deg, #f6f9fc 0%, #eef2f5 100%);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+    }
+
+    /* main card */
+    .scanner-card {
+      max-width: 720px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(2px);
+      border-radius: 2.5rem;
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .header {
+      background: #0a0f1c;
+      color: white;
+      padding: 1.5rem 2rem;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-weight: 600;
+      font-size: 1.8rem;
+      letter-spacing: -0.3px;
+      background: linear-gradient(135deg, #FFFFFF, #b9c8ff);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 0.25rem;
+    }
+
+    .header p {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      margin-top: 0.4rem;
+    }
+
+    .content {
+      padding: 2rem 1.8rem 2rem 1.8rem;
+    }
+
+    /* paste zone */
+    .paste-zone {
+      background: #ffffffdd;
+      border: 2px dashed #3b82f6;
+      border-radius: 2rem;
+      padding: 1.8rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    }
+
+    .paste-zone:hover {
+      background: #eff6ff;
+      border-color: #2563eb;
+      transform: scale(0.99);
+    }
+
+    .paste-icon {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .paste-zone h3 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .paste-zone p {
+      color: #475569;
+      margin: 0.5rem 0 0.2rem;
+      font-size: 0.9rem;
+    }
+
+    .small-hint {
+      font-size: 0.75rem;
+      color: #6c7a91;
+      margin-top: 0.5rem;
+    }
+
+    /* drag overlay extra message */
+    .drag-message {
+      background: #f1f5f9;
+      border-radius: 1.2rem;
+      padding: 0.8rem 1rem;
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-size: 0.85rem;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+    }
+
+    .drag-message span {
+      font-size: 1.2rem;
+    }
+
+    /* preview area */
+    .preview-area {
+      background: #f8fafc;
+      border-radius: 1.5rem;
+      padding: 1.2rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid #e9edf2;
+    }
+
+    .preview-title {
+      font-weight: 600;
+      margin-bottom: 0.8rem;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      width: 100%;
+    }
+
+    .image-preview-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      width: 100%;
+    }
+
+    #previewImg {
+      max-width: 220px;
+      max-height: 200px;
+      object-fit: contain;
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid #cbd5e1;
+      padding: 4px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 0.6rem;
+    }
+
+    .btn {
+      border: none;
+      background: white;
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      font-weight: 500;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: 0.15s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      border: 1px solid #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: white;
+      box-shadow: 0 2px 5px rgba(37,99,235,0.2);
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      border: 1px solid #3b82f6;
+      color: #1e40af;
+    }
+
+    .btn-outline:hover {
+      background: #eef2ff;
+    }
+
+    /* result panel */
+    .result-panel {
+      background: #ffffff;
+      border-radius: 1.5rem;
+      margin-top: 1.8rem;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+
+    .result-header {
+      background: #f1f5f9;
+      padding: 0.9rem 1.2rem;
+      font-weight: 600;
+      border-bottom: 1px solid #e2e8f0;
+      color: #0f172a;
+    }
+
+    .result-content {
+      padding: 1.2rem;
+      word-break: break-all;
+    }
+
+    #qrResult {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: #f9f9ff;
+      padding: 0.8rem;
+      border-radius: 1rem;
+      font-size: 0.9rem;
+      color: #075985;
+      border-left: 4px solid #3b82f6;
+    }
+
+    .error-text {
+      color: #b91c1c;
+      background: #fee2e2;
+      padding: 0.6rem 1rem;
+      border-radius: 1rem;
+      font-size: 0.85rem;
+    }
+
+    .success-text {
+      color: #166534;
+      background: #dcfce7;
+      padding: 0.6rem 1rem;
+      border-radius: 1rem;
+    }
+
+    .link-style {
+      color: #2563eb;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.7rem;
+      color: #5b6e8c;
+      border-top: 1px solid #e2edf2;
+      background: #fefefe;
+    }
+
+    @media (max-width: 560px) {
+      .content {
+        padding: 1.5rem;
+      }
+      .header h1 {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="scanner-card">
+  <div class="header">
+    <h1>📸 QR Sniffer</h1>
+    <p>paste · drag · drop — instant QR decode</p>
+  </div>
+
+  <div class="content">
+    <!-- PASTE ZONE : click to focus & use Ctrl+V / right-click paste -->
+    <div id="pasteZone" class="paste-zone" tabindex="0" role="button" aria-label="Paste area: click then Ctrl+V or right-click paste">
+      <div class="paste-icon">📋✨</div>
+      <h3>Paste image from clipboard</h3>
+      <p><kbd>Ctrl+V</kbd> or right-click → paste</p>
+      <div class="small-hint">Supports PNG, JPEG, WebP, any image with QR code</div>
+    </div>
+
+    <!-- Drag hint + extra case: open image in new tab & drag into tool -->
+    <div class="drag-message">
+      <span>🖱️🚀</span>
+      <div><strong>Drag & drop any image</strong> — even from another browser tab!<br>
+      ↳ Just grab an image (or open image in new tab, then drag it here) → drops instantly.</div>
+    </div>
+
+    <!-- Preview + manual scan button -->
+    <div class="preview-area" id="previewArea" style="display: none;">
+      <div class="preview-title">
+        <span>🖼️ Preview</span>
+      </div>
+      <div class="image-preview-container">
+        <img id="previewImg" alt="preview qr image" src="">
+      </div>
+      <div class="action-buttons">
+        <button id="scanBtn" class="btn btn-primary">🔍 Scan QR now</button>
+        <button id="clearBtn" class="btn btn-outline">🗑 Clear</button>
+      </div>
+    </div>
+
+    <!-- Result panel: decoded content -->
+    <div class="result-panel">
+      <div class="result-header">
+        📄 Decoded Result
+      </div>
+      <div class="result-content" id="resultContainer">
+        <div id="qrResult" style="color: #4b5563;">✨ Waiting for image — paste or drop a QR code image.</div>
+      </div>
+    </div>
+  </div>
+  <footer>
+    💡 Tip: You can "Open image in new tab" from any webpage, then drag that tab's image directly into the dashed zone.
+  </footer>
+</div>
+
+<script>
+  // --------------------------------------------------------------
+  // QR Code Scanner using html5-qrcode (robust & fast)
+  // We'll instantiate a scanner object on the fly when needed.
+  // Instead of camera, we decode image files (File or Blob).
+  // --------------------------------------------------------------
+  let currentImageFile = null;      // store uploaded/pasted/dropped file
+  const previewImg = document.getElementById('previewImg');
+  const previewArea = document.getElementById('previewArea');
+  const qrResultDiv = document.getElementById('qrResult');
+  const pasteZone = document.getElementById('pasteZone');
+  const scanBtn = document.getElementById('scanBtn');
+  const clearBtn = document.getElementById('clearBtn');
+
+  // Helper to show result (success or error)
+  function showResult(text, isError = false) {
+    if (isError) {
+      qrResultDiv.innerHTML = `<div class="error-text">⚠️ ${escapeHtml(text)}</div>`;
+    } else {
+      // if text looks like URL, make it clickable (nice vibe)
+      let displayText = escapeHtml(text);
+      let urlPattern = /^(https?:\/\/[^\s]+)$/i;
+      if (urlPattern.test(text)) {
+        displayText = `<a href="${escapeHtml(text)}" target="_blank" class="link-style" rel="noopener noreferrer">🔗 ${escapeHtml(text)}</a>`;
+      }
+      qrResultDiv.innerHTML = `<div class="success-text">✅ ${displayText}</div>`;
+    }
+  }
+
+  // simple XSS escape
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+      return c;
+    });
+  }
+
+  // core scanning function: uses html5-qrcode to decode from an image file
+  async function scanQRFromFile(file) {
+    if (!file) {
+      showResult("No image loaded. Please paste or drop an image first.", true);
+      return false;
+    }
+    // check if it's an image type
+    if (!file.type.startsWith('image/')) {
+      showResult("The provided file is not an image. Please use PNG/JPEG/WebP etc.", true);
+      return false;
+    }
+
+    showResult("⏳ Scanning QR code ... please wait", false);
+
+    try {
+      // Use Html5Qrcode to decode image from file object.
+      // We'll create a temporary instance (not using camera)
+      const html5QrCode = new Html5Qrcode("temp-scanner-id", { verbose: false });
+      // we don't need an explicit element container, just create a dummy element or use any.
+      // but we must use the method `scanFile` which accepts File and returns promise.
+      // However 'scanFile' is not directly in the main typings? Actually html5-qrcode.min.js includes 'scanFile'.
+      // Standard: use `html5QrCode.scanFile(file, /* showImage= */ true)`
+      // But there's also 'scanFile' method: returns decoded text.
+      // For html5-qrcode v2, usage: new Html5Qrcode(readerElementId).scanFile(file, verbose);
+      // Let's use consistent approach:
+      // We need a temporary container? not required if we just use scanFile. Actually scanFile renders preview automatically if element exists,
+      // but we don't want it. We'll just call using an offscreen method? I prefer to use html5Qrcode's `scanFile` which returns a promise.
+      // Implementation: create a dummy div hidden? But to avoid UI flicker, we can create a temporary element and destroy after.
+      const tempDiv = document.createElement('div');
+      tempDiv.style.display = 'none';
+      document.body.appendChild(tempDiv);
+      const scannerTemp = new Html5Qrcode(tempDiv.id, { verbose: false });
+      const decodedText = await scannerTemp.scanFile(file, /* showPreview= */ false);
+      // cleanup
+      scannerTemp.clear();
+      document.body.removeChild(tempDiv);
+      if (decodedText && decodedText.trim().length > 0) {
+        showResult(decodedText.trim());
+        return true;
+      } else {
+        showResult("No QR code found in this image. Try a clearer shot.", true);
+        return false;
+      }
+    } catch (err) {
+      console.error("QR scan error", err);
+      let errorMsg = err.message || "Could not decode QR. Make sure image contains a valid QR code.";
+      if (errorMsg.includes("No MultiFormat Readers")) errorMsg = "QR code not detected. Please check image clarity and contrast.";
+      showResult(errorMsg, true);
+      return false;
+    }
+  }
+
+  // handle new image file: update preview, store file, ready for scanning
+  function handleNewImageFile(file) {
+    if (!file || !file.type.startsWith('image/')) {
+      if(file) showResult("Unsupported file type. Please provide an image (PNG, JPG, etc).", true);
+      return false;
+    }
+    currentImageFile = file;
+    // show preview
+    const objectURL = URL.createObjectURL(file);
+    previewImg.src = objectURL;
+    previewArea.style.display = 'block';
+    // automatically attempt scanning? For better UX, we optionally auto-scan? but giving manual scan keeps vibe control.
+    // However paste&drop instinct: user expects immediate result? Let's auto-scan after preview loads (makes it feel magical)
+    // But also we respect manual scan button. auto-scan after image loads -> gives instant feedback.
+    previewImg.onload = () => {
+      URL.revokeObjectURL(objectURL);
+      // optional: auto scan for convenience
+      scanQRFromFile(currentImageFile).catch(e => console.warn);
+    };
+    // In case image load error
+    previewImg.onerror = () => {
+      URL.revokeObjectURL(objectURL);
+      showResult("Error loading image preview", true);
+    };
+    return true;
+  }
+
+  // clear everything
+  function clearAll() {
+    currentImageFile = null;
+    previewImg.src = "";
+    previewArea.style.display = "none";
+    showResult("✨ Ready — paste or drop a new QR image.", false);
+  }
+
+  // ---- PASTE LOGIC (global paste capture on pasteZone AND document) ----
+  // For great paste experience: Listen to 'paste' event on window, but filter if user focuses inside?
+  // We want user to be able to paste anywhere on page, but also specifically pasteZone shows focus.
+  let activePasteMode = true;
+  window.addEventListener('paste', (e) => {
+    // if there is any image in clipboard
+    const items = (e.clipboardData || window.clipboardData).items;
+    if (!items) return;
+    let imageFile = null;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        imageFile = items[i].getAsFile();
+        break;
+      }
+    }
+    if (imageFile) {
+      e.preventDefault();
+      handleNewImageFile(imageFile);
+      showResult("📋 Image pasted! Scanning automatically...", false);
+    } else {
+      // optional: notify only if user expects, but not intrusive
+      // No error spam, just ignore if no image
+    }
+  });
+
+  // also support drag & drop on the whole pasteZone and on card for better experience
+  const dropZone = document.querySelector('.scanner-card'); // whole card as dropzone, but prevent conflict
+  const mainZone = pasteZone;
+  
+  function allowDrag(e) {
+    e.preventDefault();
+  }
+  
+  function handleDrop(e) {
+    e.preventDefault();
+    let file = null;
+    if (e.dataTransfer.items) {
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        if (e.dataTransfer.items[i].kind === 'file') {
+          const f = e.dataTransfer.items[i].getAsFile();
+          if (f && f.type.startsWith('image/')) {
+            file = f;
+            break;
+          }
+        }
+      }
+    } else if (e.dataTransfer.files.length) {
+      file = e.dataTransfer.files[0];
+    }
+    if (file && file.type.startsWith('image/')) {
+      handleNewImageFile(file);
+      showResult("📂 Image dropped! Scanning...", false);
+    } else if (file) {
+      showResult("Dropped item is not an image. Please drop a QR image file.", true);
+    } else {
+      // maybe an image URL drag? We can also handle external image URL drops? For dragging from a web image (like from another tab)
+      // If user drags an image URL directly from another web page (like image element), we can get URL?
+      // The DataTransfer may contain text/uri-list. For best vibe: we can also extract URL.
+      const urlData = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+      if (urlData && (urlData.match(/\.(jpg|jpeg|png|webp|bmp|gif)/i) || urlData.startsWith('http'))) {
+        // attempt to fetch image and convert to file to scan
+        showResult("🌐 Fetching image from URL (dragged from web)...", false);
+        fetch(urlData.split('\n')[0])
+          .then(res => {
+            if (!res.ok) throw new Error("fetch failed");
+            return res.blob();
+          })
+          .then(blob => {
+            const fileFromUrl = new File([blob], "drag-image.jpg", { type: blob.type });
+            handleNewImageFile(fileFromUrl);
+            showResult("✨ Remote image loaded! Scanning QR ...", false);
+          })
+          .catch(err => {
+            showResult("Could not load dragged image URL. Try saving image to desktop and drop again.", true);
+          });
+        return;
+      }
+      showResult("No valid image found. Please drop an image file or drag an image from another tab.", true);
+    }
+  }
+  
+  // Add drag events globally to card & pasteZone
+  [mainZone, document.body].forEach(el => {
+    el.addEventListener('dragover', allowDrag);
+    el.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      if (el === mainZone) mainZone.style.background = "#e6f0ff";
+    });
+    el.addEventListener('dragleave', (e) => {
+      if (el === mainZone) mainZone.style.background = "";
+    });
+  });
+  document.body.addEventListener('drop', handleDrop);
+  mainZone.addEventListener('drop', handleDrop);
+  
+  // For manually scanning (if user wants to re-trigger)
+  scanBtn.addEventListener('click', () => {
+    if (currentImageFile) {
+      scanQRFromFile(currentImageFile);
+    } else {
+      showResult("No image loaded. Paste or drop a QR image first.", true);
+    }
+  });
+  
+  clearBtn.addEventListener('click', () => {
+    clearAll();
+  });
+  
+  // additional: click on pasteZone to focus (so Ctrl+V feels natural)
+  pasteZone.addEventListener('click', () => {
+    pasteZone.focus();
+    // Add a temporary tooltip-like feel
+    const originalText = pasteZone.querySelector('p')?.innerHTML;
+    // just focus indicator
+  });
+  pasteZone.addEventListener('keydown', (e) => {
+    // not needed but nice
+  });
+  
+  // Also for Right-click -> paste via context menu? Browsers allow native paste on contenteditable? 
+  // But we already have global paste event listener which works everywhere, including right-click paste on pasteZone.
+  // Perfect.
+  
+  // bonus: we can also make a button to "Open image in new tab" demo? Not needed but extra hint: but allows user to test dragging from that tab
+  // Provide helper: If the user has an image opened in another tab, they can just drag that image from the tab's body into our tool.
+  // That works thanks to drop handler, including from another origin image. (support via fetch if cross-origin maybe but most images are accessible)
+  // We'll add a small interactive tip to make it clear.
+  
+  // Initialize some friendly message about "open image in new tab" drag feature on result panel but we already in footer/message.
+  console.log("ready — Pure paste QR scanner");
+  
+  // Additional "copy result to clipboard" vibe? Not needed but might be nice, but keeps minimal.
+  // optionally, if result is text, add copy button? but works simple.
+  // For advanced, if decoded result contains link, we already render clickable.
+  
+  // Auto-focus on paste zone for immediate ctrl+v after page load? Just a hint.
+  window.onload = () => {
+    pasteZone.focus();
+    // little startup animation
+    showResult("⚡ Ready! Paste an image (Ctrl+V) or drag any QR image from anywhere — even from another browser tab.", false);
+  };
+  
+  // For robustness: sometimes drag from new tab image (when you right click image, "Open image in new tab") then drag the image from that blank tab with the image.
+  // The drop event will receive either a file (if browser constructs) or a URL. Our handler checks both. Perfect.
+  // Also handle if image blob from canvas etc.
+</script>
+</body>
+</html>
